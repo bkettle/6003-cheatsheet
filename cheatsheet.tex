@@ -1,6 +1,9 @@
 \documentclass{article}
 \usepackage[utf8]{inputenc}
-\usepackage[margin=.75in]{geometry}
+\usepackage[left=.5in,
+			right=.5in,
+			bottom=.5in,
+			top=.75in]{geometry}
 \usepackage{enumitem}
 \usepackage{listings}
 \usepackage{fancyhdr}
@@ -16,8 +19,7 @@
 
 \renewcommand{\tt}{\ttfamily \small}
 \newcommand{\tabitem}{~~\llap{\textbullet}~~}
-
-\DeclareMathOperator*{\prob}{\text{Pr}}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
 
 \lstset{
         basicstyle=\ttfamily,
@@ -30,456 +32,171 @@
         stringstyle=\color{deepgreen},
     }
 
+\setlist{noitemsep, topsep=0pt}
+
 \pagestyle{fancy}
 \fancyhf{}
 \rhead{Page \thepage}   
 \lhead{Ben Kettle}
-\fancyhead[C]{6.046 Cheat Sheet}
+\fancyhead[C]{6.003 Cheat Sheet}
 
 \begin{document}
+\section{Math Facts}
+\begin{tabularx}{\textwidth}{YYY}
+	$\displaystyle \sum_{k=0}^{n-1} ar^k = \left(\frac{1-r^n}{1-r}\right)$ & 
+	$\displaystyle \sum_{k=0}^{\infty} ar^k = \frac{a}{1-r}$ &
+	$\displaystyle \sum_{i=1}^{n} i = \frac{n(n+1)}{2}$
 
-\section{Problem Types \& Algorithms}
+\end{tabularx}
+\section{Properties of Signals}
 \begin{multicols}{2}
-	\subsection{Median Find (lec2)}
-	Uses divide-and-conquer to find median. Picks a pivot $x$ such that its rank is not extreme, to avoid unbalanced recursion (high running time). Rank is the number of items less than $x$ in the set $S$. 
-\begin{itemize}[noitemsep, topsep=0pt]
-	\item Splits $S$ into groups of size $n/5$ and finds the median of the medians of these 5 groups.
-	\item Uses this as the pivot $x$, then iterates through $S$ to find the actual rank of $x$. 
-	\item If median, done, otherwise calculate the difference from the median and find the element of required rank in either the set of items $< x$ or $>x$.
-\end{itemize}
+\subsection{Complex Exponentials}
+We can represent signals as complex exponentials to make them a lot easier in certain cases (multiplication). 
+\[ e^{jx} = \cos(x) + j\sin(x) \]
+\[ cos(x) = \frac{e^{jx} + e^{-jx}}{2} \]
+\[ sin(x) = \frac{e^{jx} - e^{-jx}}{2j} = -\frac{j}{2}\left(e^{jx}-e^{-jx}\right) \]
+\subsection{Sampling}
+Because multiple frequencies can alias to the same frequency when sampled, we use the \textit{Baseband} to describe the frequency represented by a set of samples. The baseband is the range of frequencies $0 \leq \Omega \leq \pi$.
 
-	\begin{center}
-		\begin{tabular}{lr}
-			\textbf{operation} & \textbf{runtime} \\
-			\textsc{Median-Find}$(S)$ & $O(n)$ \\
-		\end{tabular}
-	\end{center}
-
-	\subsection{Union Find (lec4)}
-	Maintains a dynamic collection of pairwise disjoint sets, with an arbitrary representative element. Forest of trees method uses a tree to represent each set, with the root as the representative. 
-	\begin{itemize}[topsep=0pt, noitemsep]
-		\item \textsc{Make-Set} initiates a new tree with the element specified. 
-		\item \textsc{Find-Set} follows the tree up from the given node to find the root, returns that.
-			\begin{itemize}
-				\item As we walk up the tree to the root, redirect pointers of every node we encounter to point to the root. Requires walking up and back down, but this doesn't change the runtime.          
-			\end{itemize}
-		\item \textsc{Union} follows calls \textsc{Find-Set} on each argument, sets root of shorter tree as the child of the root of the taller tree (maintains rank of each set).
-	\end{itemize}
-
-	\textbf{Runtime:} Proved in textbook that a sequence of $m$ operations, $n$ of which are \textsc{Make-Set} has worst-case running time $O(m\alpha(n))$. Therefore, with this sequence:
-	\begin{center}
-		\begin{tabular}{lr}
-			\textbf{operation} & \textbf{runtime} \\
-			\textsc{Find-Set}$(x)$ & $O(\alpha(n))_a$ \\
-			\textsc{Make-Set}$(x)$ & $O(\alpha(n))_a$ \\
-			\textsc{Union}$(x, y)$ & $O(\alpha(n))_a$ \\
-		\end{tabular}
-	\end{center}
-
-
-
-	\subsection{Minimum Spanning Tree (lec8, rec4)}
-	A \textit{spanning tree} of a graph is an acyclic subset of the edges in $G$ that connects all $V$. Given a connected, undirected graph $G=(V,E,w)$, a \textit{minimum} spanning tree is a spanning tree where the sum of the weights of the edges is minimized. 
-	\subsubsection{Properties}
-	\begin{itemize}[noitemsep, topsep=0pt]
-		\item \textbf{Cut Property:} If $S$ is some non-empty subset of the vertices, for any cut $(S, V\S)$ any least-weight edge crossing the cut must belong to some MST.
-			\begin{itemize}[noitemsep, topsep=0pt]
-				\item A unique least-weight edge is in \textit{all} MSTs.
-			\end{itemize}
-		\item \textbf{Cycle Property:} If a cycle $C$ in the graph $G$ contains an edge $e$ whose weight is strictly larger than every other edge in $C$, then $e$ cannot be in any MST.
-		\item \textbf{Optimal Substructure:} (rec4 p5) If an edge $e$ is in some MST $T*$ of $G$, and $T'$ is some MST of $G' = G/e$, then $T=T'\cup \{e\}$ is an MST of $G$. In other words (I think), you can swap out any edge between two nodes that is part of an MST with a different edge that is a part of another MST, and the new tree will still be an MST. 
-	\end{itemize}
-	\subsubsection{Kruskal's Algorithm (lec8 pg4, rec4 pg6)}
-	This algorithm finds an MST of a graph $G=(V,E,w)$ by initially containing each vertex in a separate set, then choosing minimum-weight edges to connect disjoint sets (taking advantage of the cut property). We store these sets using the Union Find data structure.  
-
-	\begin{itemize}[noitemsep, topsep=0pt]
-		\item Initialize $|V|$ sets, one for each $v \in V$.
-		\item Sort all edges by increasing weight order. This allows us to always take the first edge in $E$ that crosses each cut.
-		\item For every edge $(u,v)$, check if $u$ and $v$ are in distinct sets. If so, \textsc{Union} the sets and add $e$ to the tree $T$. 
-	\end{itemize}
-	Sorting the edges takes $O(|E|\log|E|) = O(|E|\log|V|)$ (using $|E| = O(|V|^2)$). We do at most $|E|$ \textsc{Union} ops, and $2|E|$ \textsc{Find-Set} ops, and this takes $O(|E|\alpha(|V|)$ by the Union-Find runtimes. Thus:
-	\begin{center}
-		\begin{tabular}{lr}
-			\textbf{operation} & \textbf{runtime} \\
-			\textsc{Kruskal}$(G=(V, E, w))$ & $O(|E|\log |V|)$ \\
-		\end{tabular}
-	\end{center}
-
-	\subsubsection{Prim's Algorithm (lec8 p6, rec4 p5)}
-	Prim's algorithm grows a tree by selecting the lowest weight edge that connects the tree to a vertex not in the tree yet.
-	\begin{itemize}[noitemsep, topsep=0pt]
-		\item Initialize the tree with edges $T_E = \varnothing$ and $T_V = \{v\}$ where $v\in V$ is some single vertex.
-		\item Until the tree includes all vertices, find the lowest weight edge $(u,v)$ such that $u \in T_V$, $v \notin T_V$, and update $T_V$ and $T_E$.
-	\end{itemize}
-	To improve the runtime, we store the edges that connect to other vertices in a priority queue, which we update on each step. See recitation notes--basically, select the vertex $u$ closest to the tree and add it, then update its neighbors' keys to be the weight of the edge $(u,v)$. This edge is the lightest weight edge connecting $v$ to some vertex in the tree, or else we would have added $v$ instead of $u$. Thus updating maintains the PQ.
-	We can implement the PG with a fibonacci heap. With the PQ, we examine each edge only once. Then, our overall runtime is $O(|E|\cdot T_{Decrease-Key} + |V|\cdot T_{Extract-Min}$. Thus:
-	\begin{center}
-		\begin{tabular}{lr}
-			\textbf{operation} & \textbf{runtime} \\
-			\textsc{Prim}$(G=(V, E, w))$ & $O(|E| + |V|\log |V|)$ \\
-		\end{tabular}
-	\end{center}
-
-
+If there are frequencies in the CT signal greater than the Nyquist frequency $f_N = \frac{f_s}{2}$, they will alias to frequencies in the base band. To avoid distortion, remove these frequencies before sampling (anti-aliasing).
 \end{multicols}
-\newpage
-\section{Concepts \& Techniques}
-\begin{multicols}{2}
-\subsection{Divide and Conquer}
-Split a problem into subproblems---modeled by a recurrence. Use the tree method to solve this, sum the work across each level and multiply it by the number of levels, basically. Alternatively use \textbf{master theorem} to solve (see 006 cheat sheet).
 
-\subsubsection{Common Recurrences}
+
+\section{Fourier Series}
+
+\begin{multicols}{2}
+\subsection{Continuous Time Fourier Series}
+Split a signal up into harmonically related sinusoids, which each have a frequency that is an integer multiple of the \textit{fundamental frequency} $\omega_0 = \frac{2\pi}{T}$ of the signal. The fundamental frequency has the same period as the \textit{fundamental period} of the signal, or the smallest value $T$ for which $x(t) = x(t+T)$ holds.
 \begin{itemize}
-	\item Merge Sort: $T(n) = 2T(n/2) + \Theta(n) \rightarrow n\log n$. Expands into a tree with $\log_2 n + 1$ levels, and each level has a total of $n/2$ work across it.
+	\item Represents periodic signals 
+	\item Can't perfectly represent discontinuities---results in Gibb's Phenomenon (overshoot)
+		\begin{itemize}
+			\item as number of terms increases, width of overshoot gets smaller, but magnitude does not (around 9\%).
+		\end{itemize}
 \end{itemize}
 
-\subsection{Randomized Algorithms}
-Allow us to spread worst-case runtimes of certain cases out by randomizing the decisionmaking.
-\begin{itemize}[noitemsep, topsep=0pt]
-	\item \textbf{Monte Carlo}: worst-case polynomial runtime, but not always correct
-	\item \textbf{Las Vegas}: \textit{expected} polynomial runtime, but always correct
+\[ f(t) = \sum_{k=0}^{\infty} (c_k \cos(k\omega_0 t) + d_k\sin(k\omega_0 t)) \]
+\[ c_0 = \frac{1}{T}\int_T f(t) dt \qquad \text{"average"} \]
+\[ c_k = \frac{2}{T}\int_T f(t) \cos(k\omega_o t) dt \]
+\[d_k = \frac{2}{T}\int_T f(t) \sin(k\omega_o t) dt \]
 
+Using exponential form, we get a simpler set of equations for CTFS:
+
+\[ x(t) = x(t+T) = \sum_{k=-\infty}^{\infty} X[k] e^{j\frac{2\pi k t}{T}} \]
+\[ X[k] = \frac{1}{T}\int_T x(t) e^{-j\frac{2\pi kt}{T}}\; dt \]
+
+\subsubsection{Properties}
+\begin{itemize}
+	\item \textbf{Real-Valued Periodic Signal:} $F[k] = F^*[-k]$ for real-valued signals.
+	\item \textbf{Symmetric and Antisymmetric Parts}: The real part of $F[k]$ comes from the symmetric part of the signal, the imaginary part comes from the antisymmetric part of the signal. In trig form, symmetric in $c_k$, antisymmetric in $d_k$.
 \end{itemize}
+\[ \begin{array}{rcc}
+	\textbf{property} & \mathbf{y(t)} & \mathbf{Y[k]} \\
+	\hline
+	\text{Linearity} & Ax_1(t) + Bx_2(t) & AX_1[k] + BX_2[k] \\
+	\text{Time Flip} & x(-t) & X[-k] \\
+	\text{Time Shift} & x(t-t_0) & e^{-j\frac{2\pi kt_0}{T}} X[k] \\
+	\text{Time Derivative} & \frac{d}{dt} x(t) & Y[k] = j\frac{2\pi}{T} X[k] \\
+\end{array} \]
 
-\subsection{Amortized Analysis (lec4, rec2)}
-Using a sequence of events to analyze cost over a sequence of events. An operation has \textit{amortized cost} $T(n)$ iff any $k$ operations have cost $\leq k\cdot T(n)$.
-
-\subsubsection{Aggregate Method}
-Compute total cost of $k$ operations and divide by $k$. Useful for simple analyses.
-
-\subsubsection{Potential Method (rec2)}
-Use a potential function to shift work from expensive operations and distribute it across multiple cheaper operations when analyzing. For any operation in the sequence, we define \textit{make-believe cost} (for purposes of analysis) as $\hat{c}$, \textit{true cost} as $c$, and the change in potential energy from the previous step to this step as $\Delta\Phi$. We then have:
-\[ \hat{c} \equiv c + \Delta\Phi \]
-We can compute the cost of a sequence of $n$ operations as well, in terms of the final and initial potential:
-\[ \sum_{i=1}^n \hat{c}_i = \sum_{i=1}^{n} c_i + \Phi(D_n) - \Phi(D_0) \]
-As long as $\Phi(D_n) \geq \Phi(D_0)$, the total amortized cost ($\sum \hat{c_i}$) gives an upper bound on the total actual cost. The potential function must then be chosen so that the value of the potential function never drops below its initial value. 
-
-If choosing $\Phi$, choose it such that $\Delta\Phi$ decreases by a big step when expensive operations happen.
-
-\subsection{Competitive Analysis (lec5, rec3)}
-Used to compare an online algorithm that processes requests as they come in to an optimal offline algorithm that knows the full sequence of requests beforehand. An algorithm $A$ is $\alpha$-competitive if, for any sequence of requests $R$, the total cost is at most $\alpha$ times the optimal (plus a constant $k$):
-\[ C_A(R) \leq \alpha\cdot C_{OPT}(R) + k \]
-This can be done using the potential method as well, and it can be useful to approach it from an amortized standpoint, using again $\hat{C}_i = C_i + \Delta\Phi$. 
-\[ C_{A,i}(R) + \Delta\Phi) \leq \alpha C_{OPT,i}(R) \] 
-If we can prove this for every case depending on the decisions of $C_A$ and $C_{OPT}$, we can then multiply this amortized cost by $|R|$ to prove the initial inequality. 
-
-\subsection{Hashing (lec6, lec7, rec3)}
-A hash function takes an input in the set $U$ of possible keys, and returns an output on the range $\{0,\ldots, m-1\}$. This can be used in conjunction with a direct access array of size $m$ to build a hash table.
-\subsubsection{Universal Hash Family (lec6, rec3)}
-Hash functions by definition have collisions. We can distribute these collisions by generating a random hash function for every hash table, but this uses $O(|U|)$ space. A UHF allows us to achieve the same goal with much less space. 
-
-A family $\mathcal{H}$ of hash functions $h_i$, each of which maps a key in $U$ to one of $m$ slots, is a Universal Hash Family if an arbitrary pair of keys $(k, k')$ collide with probability at most $\frac{1}{m}$ when we pick a random hash function from $\mathcal{H}$:  
-\[ \prob_{h \in \mathcal{H}}{[h(k) = h(k')]} \leq \frac{1}{m} \text{ for all } k\neq k' \]
-
-\subsubsection{Perfect Hashing (lec7)}
-Perfect hashing is hashing without collisions---it allows worst-case $O(1)$ lookups instead of expected. Implemented with randomized algorithms--we generte the data structure in expected time, however. 
+\subsection{DTFS}
+In CTFS, there can be an infinite number of harmonics, as resolution is infinite. In a DT signal with period $N$, there can only be $N$ harmonics--the others will alias to a harmonic within those $N$. We have a similar fundamental frequency $\Omega_0 = \frac{2\pi}{N}$.
+\[ x[n] = x[n+N] = \sum_{k=k_0}^{k_0 + N -1} X[k] e^{j\frac{2\pi}{N} kn} \]
+\[ X[k] = X[k+N] = \frac{1}{N}\sum_{n=n_0}^{n_0+N-1} x[n] e^{-j\frac{2\pi}{N} kn} \]
+\subsubsection{Properties}
+\[ \begin{array}{rcc}
+	\textbf{property} & \mathbf{y[t]} & \mathbf{Y[k]} \\
+	\hline
+	\text{Linearity} & Ax_1[n] + Bx_2[n] & AX_1[k] + BX_2[k] \\
+	\text{Time Flip} & x[-n] & X[-k] \\
+	\text{Time Shift} & x[n-m] & e^{-j\frac{2\pi km}{N}} X[k] \\
+	\text{Sym. Part} & \frac{1}{2}(x[n] + x[-n]) & Re(X[k]) \\
+	\text{Antisym. Part} & \frac{1}{2}(x[n] - x[-n]) & j\cdot Im(X[k])
+\end{array} \]
 
 \end{multicols}
 
-
-
-
-
-
-\newpage % begin 6.006 stuff
-\section{Sorting Algorithms}
-
-\begin{center}
-    \begin{tabular}{l||c|c|c|l||} 
-        Algorithm & Time $O(\cdot)$ & In-place? & Stable? & Comments \\
-        \hline \hline Insertion Sort & $n^{2}$ & $Y$ & $Y$ & $O(n k)$ for $k$ -proximate \\
-        \hline Selection Sort & $n^{2}$ & $Y$ & $N$ & $O(n)$ swaps \\
-        \hline Merge Sort & $n \log n$ & $N$ & $Y$ & stable, optimal comparison \\
-        \hline AVL Sort & $n \log n$ & $N$ & $Y$ & good if also need dynamic \\
-        \hline Heap Sort & $n \log n$ & $Y$ & $N$ & low space, optimal comparison \\
-        \hline Counting Sort & $n+u$ & $N$ & $Y$ & $O(n)$ when $u=O(n)$. $u=max(vals)$ \\
-        \hline Radix Sort & $n+n \log _{n} u$ & $N$ & $Y$ & $O(n)$ when $u=O\left(n^{c}\right)$ \\
-        \hline
-    \end{tabular}
-\end{center}
-
-\noindent\begin{tabularx}{\textwidth}{XXX}
-    \textbf{Selection Sort} finds largest number in remainder of the list, then move it to the front. Recurse. & 
-    \textbf{Merge Sort} recursively sorts halves of the list, then merges them with an $O(n)$ two finger alg. &
-    \textbf{Insertion Sort} Recursively sorts the prefix, then adds and sorts in one item at a time. \\ \\
-    \textbf{Counting Sort} basically uses a direct access array, with a chain in each slot. Insert then read back. &
-    \textbf{AVL Sort} inserts into a set AVL and reads it back. Any set data structure defines a sorting alg. &
-    \textbf{Heap Sort} is priority queue sort but with a max heap. Build then repeatedly delete. \\ \\
-\end{tabularx}
-
-\noindent\begin{tabularx}{\textwidth}{X}
-    \textbf{Radix Sort} uses tuple sort with auxillary counting sort to sort tuples. Sort from least significant key to most significant key. If every key $< n^c$ for some $0<c=\log_n(u)$, at most $c$ digits base $n$. Then write it as a $c$ element tuple and sort each digit in $O(c)$ time. If $c$ is constant so each key is $\leq n^c$, linear time.
-\end{tabularx}
-
-
-\section{Data Structures}
-\subsection{Sequences}
-\begin{center}
-    \begin{tabular}{l|||c||c||c|c|c|||} 
-        & \multicolumn{5}{c|||} { Operations $O(\cdot)$} \\
-       \cline{2-6}  \multirow{2}{*}{\makecell{Sequence \\ Data Structure}} & Container & Static & \multicolumn{3}{c|||} { Dynamic } \\
-       \cline{2-6}  & \tt build(x) & \makecell{{\tt get\_at()} \\ {\tt set\_at(i,x)}} & \makecell{\tt insert\_first(x) \\ \tt delete\_first()} & \makecell{\tt insert\_last(x) \\ \tt delete\_last()} & \makecell{\tt insert\_at(i,x) \\ \tt delete\_at(1)} \\
-       \hline\hline Array & $n$ & 1 & $n$ & $n$ & $n$ \\
-       \hline Linked List & $n$ & $n$ & 1 & $n$ & $n$ \\
-       \hline Dynamic Array & $n$ & 1 & $n$ & $1_{(a)}$ & $n$ \\
-       \hline Sequence AVL & $n$ & $\log n$ & $\log n$ & $\log n$ & $\log n$ \\
-       \hline
-   \end{tabular}
-\end{center}
-
-
-\subsection{Sets}
-\begin{center}
-    \begin{tabular}{l|||c||c||c||c|c|||} 
-        & \multicolumn{5}{c|||} { Operations $O(\cdot)$} \\
-        \cline{2-6} \multirow{2}{*}{\makecell{Set \\ Data Structure}} & Container & Static & Dynamic & \multicolumn{2}{c|||}{Order} \\
-        \cline{2-6} & \tt build(x) & \tt find(k) & \makecell{\tt insert(x) \\ \tt delete(k)} & \makecell{\tt find\_min() \\ \tt find\_max()} & \makecell{\tt find\_prev(k) \\ \tt find\_next(k)} \\
-        \hline\hline Array & $n$ & $n$ & $n$ & $n$ & $n$ \\
-        \hline Sorted Array & $n \log n$ & $\log n$ & $n$ & 1 & $\log n$ \\
-        \hline Direct Access & $u$ & 1 & 1 & $u$ & $u$ \\
-        \hline Hash Table & $n_{(e)}$ & $1_{(e)}$ & $1_{(a)(e)}$ & $n$ & $n$ \\
-        \hline Set AVL & $n \log n$ & $\log n$ & $\log n$ & $\log n$ & $\log n$ \\
-        \hline
-    \end{tabular}
-\end{center}
-
-\subsection{Priority Queues}
-\begin{center}
-    \begin{tabular}{l|||c|c|c|c|||}
-        \multirow{2}{*}{\makecell{Priority Queue \\ Data Structure}} & \multicolumn{4}{c|||} { Operations $O(\cdot)$} \\
-        \cline{2-5} & \tt build(x) & \tt insert(x) & \tt delete\_max() & \tt find\_max() \\
-        \hline \hline Dynamic Array & $n$ & $1_{(a)}$ & $n$ & $n$ \\
-        \hline Sorted Dyn. Array & $n \log n$ & $n$ & $1_{(a)}$ & 1 \\
-        \hline Set AVL & $n \log n$ & $\log n$ & $\log n$ & $\log n$ \\
-        \hline Binary Heap & $n$ & $\log n_{(a)}$ & $\log n_{(a)}$ & 1 \\
-        \hline
-    \end{tabular}
-\end{center}
-
-\section{Binary Trees}
-\subsection{Traversal Order}
-For every node $x$, every node in $x$'s left subtree is before $x$. Every node in $x$'s right subtree is after $x$. Recursive.
-\subsection{Binary Search Trees}
-These have a key for each node, and are sorted by these keys. For every node $i$, all keys in left subtree $\leq$ $i$'s key, which is less than or equal to every key in the right subtree. This way, they are returned in order when you traverse.
-\subsection{Rotations}
-A node is height-balanced if its \textbf{skew} = height(right subtree) - height(left subtree) is -1, 1, or 0. AVL trees can be balanced using rotations! Rotations preserve the traversal order while changing the depth of the subtrees. Rotate right is moving from left to right below, and rotate left is moving right to left.
-
-\begin{center}
-\begin{tabular}{ccc}
-    \begin{forest}
-        [y, circle,draw
-            [x, circle,draw
-                [A, rectangle,draw]
-                [B, rectangle,draw]
-            ]
-            [C, rectangle,draw]
-        ]
-    \end{forest} &
-
-    \hspace{1.5in}
-    
-    \begin{forest}
-        [x, circle,draw
-            [A, rectangle,draw]
-            [y, circle,draw
-                [B, rectangle,draw]
-                [C, rectangle,draw]
-            ]
-        ]
-    \end{forest} & 
-
-    
-    % \begin{tabular}{c}
-    %     \tt rotate\_right(x) \\
-    %     $\longrightarrow$ \\
-    %     \tt rotate\_left(y) \\
-    %     $\longleftarrow$
-    % \end{tabular} & 
-
-    
-\end{tabular}
-\end{center}
-
-\subsection{Augmentations}
-Augmentations need to be based on the subtree nodes, and be stores at each node. To augment, state the subtree property $P(x)$ you want to store at each node $x$, and show how to compute $P(x)$ based on augmentations of $x$'s children in $\mathbf{O(1)}$ time. 
-
-\section{Recurrences}
-\subsection{Master Theorem}
-Used for solving recurrences where recursive calls decrease by a constant factor. Given a recurrence relation of the form $T(n) = aT(n/b)+f(n)$, we can apply the below, given a few restrictions:
-\begin{itemize}[noitemsep,topsep=1pt]
-    \item branching factor $a \geq 1$
-    \item problem size reduction factor $b > 1$
-    \item asymptotically non-negative $f(n)$.
-\end{itemize}
-\begin{center}
-    \begin{tabular}{c|l|l} 
-        case & solution & conditions \\
-        \hline 1 & $T(n)=\Theta\left(n^{\log _{b} a}\right)$ & $f(n)=O\left(n^{\log _{b} a-\varepsilon}\right)$ for some constant $\varepsilon>0$ \\
-        \hline 2 & $T(n)=\Theta\left(n^{\log _{b} a} \log ^{k+1} n\right)$ & $f(n)=\Theta\left(n^{\log _{b} a} \log ^{k} n\right)$ for some constant $k \geq 0$ \\
-        \hline 3 & $T(n)=\Theta(f(n))$ & $f(n)=\Omega\left(n^{\log _{b} a+\varepsilon}\right)$ for some constant $\varepsilon>0$ \\
-        & & and $a f(n / b)<c f(n)$ for some constant $0<c<1$
-    \end{tabular}
-\end{center}
-
-When $f(n)$ is polynomial, such that the recurrence has the form $aT(n/b) + \Theta(n^c)$ for some constant $c \geq 0$:
-
-\begin{center}
-    \begin{tabular}{c|l|l|l} 
-        case & solution & conditions & intuition \\
-        \hline 1 & $T(n)=\Theta\left(n^{\log _{b} a}\right)$ & $c<\log _{b} a$ & Work done at leaves dominates \\
-        \hline 2 & $T(n)=\Theta\left(n^{c} \log n\right)$ & $c=\log _{b} a$ & Work balanced across the tree \\
-        \hline 3 & $T(n)=\Theta\left(n^{c}\right)$ & $c>\log _{b} a$ & Work done at root dominates
-    \end{tabular}
-\end{center}
-
-\subsection{Substitution}
-Basically just guess and plug in your guess times a constant for $T(n)$. Like if you're guessing $O(n)$, put $cn$ for $T(n)$ and $c(\frac{n}{2})$ for $T(\frac{n}{2})$. Guessing $T(n)=O(n\log n)$ for $T(n) = 2T(n/2) + O(n)$:
-\[ T(n) = n \log n \longrightarrow cn \log n = O(n) + 2c(\frac{n}{2}) \log\frac{n}{2} \longrightarrow cn \log 2 = O(n) \]
-
 \newpage
-\section{Graph Algorithms}
-\begin{center}
-\begin{tabular}{l|l|l|c|l} 
-    \multicolumn{2}{l|}{Restrictions} & \multicolumn{3}{c} { SSSP Algorithm } \\
-    \hline Graph & Weights & Name & Running Time $O(\cdot)$ & Notes \\
-    \hline \hline DAG & Any & DAG Relaxation & $|V|+|E|$ & Relax in topo ordering\\
-    General & Unweighted & BFS & $|V|+|E|$ & \\
-    General & Non-negative & Dijkstra & $|V| \log |V|+|E|$ & With Fibonacci heap PQ \\
-    General & Any & Bellman-Ford & $|V| \cdot|E|$ & Duplicate $\rightarrow$ DAG Relax\\
-    \hline
-    General & Any & Johnson's (\textbf{APSP}) & $|V|^2 \log |V| + |V||E|$ & B-F then $|V|$ Dijkstras
-\end{tabular}
+\begin{multicols}{2}
+\section{Fourier Transforms}
+\subsection{CT Fourier Transform}
+Essentially, a fourier series as the period approaches infinity.
+\[ x(t) = \frac{1}{2\pi} \int_{-\infty}^{\infty} X(\omega)\cdot e^{j\omega t} d\omega \quad X(\omega) = \int_{-\infty}^{\infty} x(t) \cdot e^{-j\omega t} dt \]
 
+\subsubsection{Useful Signals}
+Stretching in time compresses in frequency, and vice versa.
+\begin{center}
+\includegraphics[scale=.6]{ctft_rectangular_pulse.png}
+\includegraphics[scale=.75]{ctft_rectangular_pulse_compressed.png}
+\includegraphics[scale=.75]{ctft_impulse.png}
 \end{center}
 
-\noindent\begin{tabularx}{\textwidth}{XXX}
-    \textbf{BFS} searches in levels of increasing distance, and does not revisit seen nodes. Does not explore all paths. Returns parent tree of shortest paths. &
-    \textbf{DFS} touches all nodes reachable from $s$, does not revisit nodes. Returns parent tree, but not shortest. Can find cycles by checking if edges match topo order.&
-    \textbf{DAG Relaxation} finds a topo ordering, then relaxes edges in that order. Relax $(u,v,x)$ means $\delta(u,v)$ becomes min of $\delta(u,v)$ and $\delta(u,x) + w(x,v)$. Enforces triangle ineq. \\\\
-    \textbf{Dijkstra} explores all edges from source, then from each subsequent node in order of node's distance from source. Order of node exploration mimics water flowing. Whenever source node is found, must be shortest path. $O(|V|^2)$ w/ array PQ, $O(|E|\log|V|)$ w/ bin. heap PQ.&
-    \textbf{Bellman-Ford} structures graph into a form usable by DAG relaxation. Duplicates $|V|+1$ times (max $|V|$ edges), connects each $v$ to self and adj. vert. in next level. Prunes $G$ to reachable subgraph for $|V|=O(|E|)$. If $\delta_{|V|} < \delta_{|V|-1}$, must be neg. wt. cycle.&
-    \textbf{Johnson's} runs B-F from supernode $x$ with $w(x,v) = 0\;\forall\, v \in V$ to find \emph{potential} of each node $h(v) = \delta(S,v)$. Removes $x$ and reweights $w(u,v) = w(u,v) + h(u) - h(v)$ for all edges. Weights now non-neg., so run Dijkstra from each $v$ to find $\delta '$, then $\delta(u,v) = \delta'(u,v) - h(u)+h(v)$. \\
-\end{tabularx}
+\subsubsection{Duality}
+If taking the CTFT of $x(t)$ gives us $X(\omega)$, then if we interpret those coefficients as another signal and take the CTFT again, we will get $2\pi x(-\omega)$. Need clarity here.
 
-\subsection{Problem Types}
-\begin{itemize}[noitemsep]
-    \item \textbf{Single Source Reachability}: finds which vertices are accessible from a source. Solved by BFS/DFS.
-    \item \textbf{Cycle Detection}: determining whether a cycle exists in a graph. Solved by DFS looking for back edges.
-    \item \textbf{Connected Components}: find subgraphs of $G$ that are connected. Solved by Full-DFS/Full-BFS.
-    \item \textbf{Single Source Shortest Paths (SSSP)}: finds the shortest paths to every $v$ in a graph $G$ from a source $s$.
-    \item \textbf{All Pairs Shortest Paths (APSP)}: finds the shortest paths between every pair of nodes $u,v$ in $G$.
+\subsubsection{Properties}
+\[
+\begin{array}{rcc}
+	\textbf{property} & \mathbf{y(t)} & \mathbf{Y(\omega)} \\
+	\hline
+	\text{Linearity} & ax_1(t) + bx_2(t) & aX_1(\omega) + bX_2(\omega) \\
+	\text{Time Reversal} & x(-t) & X(-\omega) \\
+	\text{Time Delay} & x(t-t_0) & e^{-j\omega t_0} X(\omega) \\
+	\text{Conjugation} & x^*(t) & X^*(-\omega) \\
+	\text{Scaling Time} & x(at) & \frac{1}{|a|}X\left(\frac{\omega}{a}\right) \\
+	\text{Time Derivative} & \frac{dx(t)}{dt} & j\omega X(\omega) \\
+	\text{Freq. Derivative} & tx(t) & j\frac{d}{d\omega} X(\omega)
+\end{array}
+\]
+
+\subsection{Discrete Time Fourier Transform}
+Same idea, we make a periodic version of $x[n]$ by summing shifted copies and take the DTFS of that, but do so as the distance between copies approaches infinity.
+\[ x[n] = \frac{1}{2\pi}\int_{2\pi} X(\Omega) \cdot e^{j\Omega n} d\Omega \]
+\[ X(\Omega) = X(\Omega + 2\pi) = \sum_{n=-\infty}^{\infty} x[n]\cdot e^{-j\Omega n} \]
+
+\subsubsection{Properties}
+Note that the coefficients are periodic in this case
+\[
+\begin{array}{rcc}
+	\textbf{property} & \mathbf{y(t)} & \mathbf{Y(\omega)} \\
+	\hline
+	\text{Linearity} & ax_1[n] + bx_2[n] & aX_1(\Omega) + bX_2(\Omega) \\
+	\text{Time Reversal} & x[-n] & X(-\Omega) \\
+	\text{Time Delay} & x[n-n_0] & e^{-j\Omega n_0} X(\Omega) \\
+	\text{Conjugation} & x^*[n] & X^*(-\Omega) \\
+	\text{Freq. Derivative} & nx[n] & j\frac{d}{d\Omega} X(\Omega)
+\end{array}
+\]
+
+\section{Discrete Fourier Transform}
+Everything so far has had either infinite sums or a continuous domain---difficult for a computer. To solve this, we take an $N$-sample window of the signal, pretend the signal is periodic in $N$, and generate the DTFS of this fake-periodic signal. 
+\begin{itemize}
+	\item Increasing $N$ increases frequency resolution
+	\item If the signal is not periodic in $N$, we get spectral blurring where frequencies do not line up exactly with the positions of the coefficients. 
 \end{itemize}
-\subsection{Definitions}
-\begin{itemize}[noitemsep]
-    \item \textbf{Simple Path}: a path that does not repeat any vertices.
-    \item \textbf{Full-\{DFS/BFS\}} repeats DFS/BFS until all nodes have been touched.
-    \item \textbf{Connected Graph}: an undirected graph in which there is a path between every pair of nodes.
-    \item \textbf{Strongly Connected}: every node is reachable from every other. Note this implies $|E|=\Omega(|V|)$.
-    \item \textbf{Dense Graph}: defined by $|E| = \Omega(|V|^2)$.
-    \item \textbf{Sparse Graph}: defined by $|E| = O(|V|)$. \textbf{Planar Graphs} are sparse.
-    \item \textbf{Directed Acyclic Graph (DAG)}: Contains no directed cycle.
-    \item \textbf{Finishing Order}: The order in which a Full-DFS \emph{finishes} visiting each vertex in $G$.
-    \item \textbf{Topological Order:} an ordering $f$ such that every edge $(u,v) \in E$ satisfies $f(u)<f(v)$.
-    \begin{itemize}[topsep=0pt,noitemsep]
-        \item The reverse of a \textit{finishing order} is a topological order.
-    \end{itemize}
-\end{itemize}
 
-\subsection{Tricks}
-\begin{itemize}[noitemsep]
-    \item \textbf{Graph Duplication}: for any problem with \emph{state}, graph duplication is a good idea. Create one copy of the vertexes for each state, and connect them according to state transitions. Then, run shortest path algorithm.
-    \item \textbf{Supernodes}: creating a "supernode" with edges to mulptiple other nodes in the graph can speed up many algorithms instead of running a SP alg from each node. However, lose specificity.
-    \item \textbf{Constant Bounded Weights}: if the weights in a graph are bounded by $O(1)$, SSSP can be solved with BFS by "splitting" edges into multiple edges between dummy vertices to create strictly weight-1 edges.
-    \item \textbf{Reversing Edges}: to find shortest paths \emph{to} a single node, can reverse all path directions and run SSSP.
-\end{itemize}
+\[ x[n] = \sum_{k=0}^{N-1} X[k] e^{j\frac{2\pi k}{N} n} \qquad X[k] = \frac{1}{N} \sum_{n=0}^{N-1} x[n]\cdot e^{-j\frac{2\pi k}{N} n} \]
 
-\newpage
-\section{Dynamic Programming}
+\subsubsection{Properties}
+\[ \begin{array}{rcc}
+	\textbf{property} & \mathbf{y(t)} & \mathbf{Y[k]} \\
+	\hline
+	\text{Linearity} & Ax_1[n] + Bx_2[n] & AX_1[k] + BX_2[k] \\
+	\text{Time Flip} & x_p[N-n] & X[-k] \\
+	\text{Time Shift} & x[n-n_0] & e^{-j\frac{2\pi k}{N}n_0} X[k] \\
+	\text{Freq. Shift} & e^{-j\frac{2\pi k_0}{N}n}\cdot x[n] & X[k-k_0] \\
+	\text{Conjugation} & x^*[n] & X^*[-k] \\
+\end{array} \]
 
-\begin{minipage}[t]{0.49\textwidth}
-    \subsection{General Approach}
-    Dynamic programming problems can be described using the SRTBOT acronym.
+\section{Systems Abstraction}
+Many applications can be modeled as systems that convert an input signal to an output signal. We focus on systems that are \textbf{linear} (you can add them together) and \textbf{time invariant} (delaying input delays the output by the same amount). 
 
-    \vspace{3mm}
-    \textbf{Subproblem}: Define the subproblem(s) that must be calculated in English. 
-    \begin{itemize}[topsep=2pt, noitemsep]
-        \item this should always be like a number or T/F value, not the path to get there.
-        \item if using multiple subproblems, it can often be simpler to combine them into a single subproblem with an additional parameter.
-        \item often relies on an ``index'' parameter.
-        \item typically prefix/suffix/substring
-    \end{itemize}
+Systems can be represented with a \textbf{difference equation} ($y[n] = \frac{x[n] + x[n-1]}{2}$ or in terms of \textbf{convolution} (using its unit-sample response). With convolution, we can use linearity to then construct the output of any signal by just adding and shifting.
 
-    \vspace{2mm}\textbf{Relate}: Define the recursive relationship between subproblems mathematically; the way that each subproblem relies on a smaller subproblem.
-
-    \vspace{2mm}\textbf{Topological Order}: Show that the graph formed by the subproblems' dependencies is acyclic.
-    \begin{itemize}[topsep=2pt, noitemsep]
-        \item often enough to say ``$i$ is strictly decreasing'' or ``$i+j$ is strictly increasing''.
-    \end{itemize}
-
-    \vspace{2mm}\textbf{Base Cases}: Define the cases where you know the answer to the subproblem without relying on other subproblems. Typically when the ``index'' reaches the end/beginning.
-
-    \vspace{2mm}\textbf{Original Problem}: Give the subproblem or operation between multiple subproblems that give the answer to the original problem.
-    \begin{itemize}[topsep=2pt, noitemsep]
-        \item can be like a max over all possible starting positions
-        \item specify top-down or bottom-up 
-        \item specify using parent pointers if need the actual path.
-    \end{itemize}
-
-    \vspace{2mm}\textbf{Time Analysis}: Find the time of the whole operation
-    \begin{itemize}[topsep=2pt, noitemsep]
-        \item \# of subproblems times time per subproblem
-        \item make sure to account for solving original
-    \end{itemize}
-
-    \subsection{Examples}
-    \subsubsection{Longest Common Subsequence}
-    Given two strings $A$ and $B$, find a longest subsequence of $A$ that is also a subsequence of $B$.
-
-    Idea: keep starting indices in $A$ and $B$, check first letters. If match, in subsequence, if not, try next letter in each.
-
-    
-\end{minipage}
-\hspace{.02\textwidth}
-\begin{minipage}[t]{0.5\textwidth}
-    \section{Complexity}
-    Focus on \textbf{decision problems}: assignment of input to yes/no. A decision problem is \textbf{decidable} if there exists constant length code to solve the problem in finite time.
-    \subsection{Classifications}
-    We classify decision problems into three main classes where $\textbf{R} \subsetneq \textbf{EXP} \subsetneq \textbf{P}$, with input size $n$:
-    \begin{itemize}[noitemsep, topsep=0pt]
-        \item R: broadest, all problems decidable in finite time.
-        \item EXP: problems decidable in exponential time $2^{n^{O(1)}}$
-        \item P: problems decidable in polynomial time $n^{O(1)}$
-    \end{itemize}
-
-    There is another class of problems called \textbf{NP} for Nondeterministic Polynomial Time. Regardless of how long it takes to solve the problem, problems in \textbf{NP can be verified in polynomial time}:
-    \begin{itemize}[topsep=0pt, noitemsep]
-        \item Given an input consisting of an instance $I$ of the problem, and a certificate $c$ with length $O(|I|^k)$, there exists an algorithm to verify $c$, returning whether the instance is a YES or a NO in $O(|I|^k)$ time.
-        \item For example, the certificate of checking whether a shortest path with length $<d$ exists would be the shortest path itself.
-        \begin{itemize}[topsep=0pt, noitemsep]
-            \item If YES and $c$ is correct, $c$ can be verified as a correct solution easily
-            \item If YES but $c$ is invalid (ie a path longer than $d$), return no
-            \item If NO, all $c$ are invalid. 
-        \end{itemize}
-        \item $\textbf{P} \subset \textbf{NP}$, but unknown if $\textbf{P} = \textbf{NP}$. So we don't know if there are problems that can be checked in polynomial time, but cannot be solved in polynomial time.
-    \end{itemize}
-
-    \subsection{Reductions}
-    Problem $A$ can be solved by converting it into a problem $B$ you know how to solve. Called \textbf{reducing} $A$ to $B$.
-    \begin{itemize}[noitemsep, topsep=0pt]
-        \item The solution to some instance of $B$ can be used to find a solution to $A$.
-        \item $B$ must be \textbf{at least as hard} as $A$ then.
-        \item Some problems can be reduced to each other, meaning they are equal in hardness.
-    \end{itemize}
-
-    \subsection{NP-Complete and NP-Hard}
-    A problem is \textbf{NP-Hard} if all problems in NP can be reduced to that problem, and the reduction itself takes polynomial time. That means it's \textbf{at least as hard} as every problem in NP. 
-    
-    If a problem is in NP \textbf{and} is NP-Hard, it is termed NP-Complete. 
-    \begin{itemize}[topsep=0pt, noitemsep]
-        \item All NP-Complete problems are reducible to each other, equivalent in hardness.
-        \item NP-Complete problems are the hardest problems in NP.
-    \end{itemize}
-\end{minipage}
-
-
+\subsection{Convolution}
+Given a unit-sample response for a system, we can compute the output signal by shifting, multiplying, and adding, or integrating for a CT system:
+\[ y[n] = (x * h)[n] = \sum_{k=-\infty}^{\infty} x[k]h[n-k] \]
+\[ y(t) = (x*h)(t) = \int_{-\infty}^{\infty}x(\tau)h(t-\tau)\; d\tau \]
+Convolution is \textbf{commutative} (can change the order), \textbf{associative} (which pair you convolve first doesn't matter) and \textbf{distributive over addition}.
+\end{multicols}
 \end{document}
